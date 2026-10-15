@@ -1,0 +1,169 @@
+diff --git a/docs/specs/02-equipment-shopping.md b/docs/specs/02-equipment-shopping.md
+--- a/docs/specs/02-equipment-shopping.md
++++ b/docs/specs/02-equipment-shopping.md
+@@ -32,6 +32,10 @@
+ 
+ **Given** I read Handmade corn tortillas, **when** I choose **Shop cast-iron comal**, **then** I see the Cast-Iron Comal page.
+ 
++## Returning to the technique
++
++The product page's back action returns the learner to the technique they came from on its cuisine page, scrolled to that technique, and names it (**← Back to Handmade corn tortillas**). If the page was opened directly, with no technique to return to, the action reads **← Explore cuisines** and opens the homepage. It must never be labeled as going to techniques while landing somewhere without them.
++
+ ## Mock-store experience
+ 
+ The target is a local HTML/React route styled as a fictional store: product name, illustration, price, features, and a **disabled checkout** button. It must display a **Simulated storefront** label. No network requests, affiliate tracking, real Amazon links, or real orders.
+diff --git a/docs/specs/03-video-lessons.md b/docs/specs/03-video-lessons.md
+--- a/docs/specs/03-video-lessons.md
++++ b/docs/specs/03-video-lessons.md
+@@ -16,6 +16,10 @@
+ 
+ **Given** I use a nonexistent `videoId`, **then** a friendly not-found state displays.
+ 
++## Returning to the technique
++
++The lesson page's back action follows the same rule as Spec 02: it returns to the originating technique and names it, or reads **← Explore cuisines** and opens the homepage when the page was opened directly.
++
+ ## Interface and design
+ 
+ `src/features/videos/VideoLibrary.tsx` renders a preview card and lesson page. The local video catalog resides in `src/data/catalog.ts`. Use a CSS poster, semantic headings and an accessible button. No embeds, YouTube calls, streaming, API keys, or downloaded assets.
+diff --git a/src/types.ts b/src/types.ts
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -41,3 +41,9 @@
+   keyFrames: string[];
+   gradient: string;
+ };
++
++/** Where a product or video page's back action should return the learner. */
++export type ReturnTo = {
++  path: string;
++  label: string;
++};
+diff --git a/src/features/cuisine/CuisineDiscovery.tsx b/src/features/cuisine/CuisineDiscovery.tsx
+--- a/src/features/cuisine/CuisineDiscovery.tsx
++++ b/src/features/cuisine/CuisineDiscovery.tsx
+@@ -1,5 +1,6 @@
+ import { Box, Button, Card, CardContent, Chip, Container, Divider, Grid, Paper, Stack, Typography } from '@mui/material';
+-import { Link, useParams } from 'react-router-dom';
++import { useEffect } from 'react';
++import { Link, useLocation, useParams } from 'react-router-dom';
+ import { cuisines, getCuisine } from '../../data/catalog';
+ import { EquipmentLinks } from '../equipment/EquipmentLinks';
+ import { VideoLink } from '../videos/VideoLibrary';
+@@ -39,6 +40,10 @@
+ export function CuisinePage() {
+   const { cuisineId } = useParams();
+   const cuisine = getCuisine(cuisineId);
++  const { hash } = useLocation();
++  useEffect(() => {
++    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
++  }, [hash]);
+   if (!cuisine) return <Container sx={{ py: 7 }}><Typography variant="h2">Cuisine not found</Typography><Button component={Link} to="/">Back to cuisines</Button></Container>;
+   return (
+     <Container maxWidth="lg" sx={{ pt: 4 }}>
+@@ -49,7 +54,9 @@
+         <Typography sx={{ mt: 1, fontSize: 18, maxWidth: 700 }}>{cuisine.intro}</Typography>
+       </Paper>
+       <Stack spacing={4}>
+-        {cuisine.techniques.map((technique, index) => (
++        {cuisine.techniques.map((technique, index) => {
++          const returnTo = { path: `/cuisines/${cuisine.id}#${technique.id}`, label: technique.name };
++          return (
+           <Card key={technique.id} id={technique.id} component="section" aria-label={technique.name}>
+             <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+               <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+@@ -65,13 +72,14 @@
+               </Box>
+               <Divider sx={{ my: 3 }} />
+               <Typography variant="h6" sx={{ mb: 1 }}>Recommended equipment</Typography>
+-              <EquipmentLinks recommendations={technique.equipment} />
++              <EquipmentLinks recommendations={technique.equipment} returnTo={returnTo} />
+               <Divider sx={{ my: 3 }} />
+               <Typography variant="h6" sx={{ mb: 1 }}>Watch the technique</Typography>
+-              <VideoLink videoId={technique.videoId} />
++              <VideoLink videoId={technique.videoId} returnTo={returnTo} />
+             </CardContent>
+           </Card>
+-        ))}
++          );
++        })}
+       </Stack>
+     </Container>
+   );
+diff --git a/src/features/equipment/EquipmentLinks.tsx b/src/features/equipment/EquipmentLinks.tsx
+--- a/src/features/equipment/EquipmentLinks.tsx
++++ b/src/features/equipment/EquipmentLinks.tsx
+@@ -1,10 +1,10 @@
+ import { Box, Button, Card, CardContent, Chip, Container, Grid, Paper, Stack, Typography } from '@mui/material';
+-import { Link, useParams } from 'react-router-dom';
++import { Link, useLocation, useParams } from 'react-router-dom';
+ import { getProduct } from '../../data/catalog';
+-import type { EquipmentRecommendation } from '../../types';
++import type { EquipmentRecommendation, ReturnTo } from '../../types';
+ import { findProductBySlug, productHref } from './productLinks';
+ 
+-export function EquipmentLinks({ recommendations }: { recommendations: EquipmentRecommendation[] }) {
++export function EquipmentLinks({ recommendations, returnTo }: { recommendations: EquipmentRecommendation[]; returnTo?: ReturnTo }) {
+   return (
+     <Grid container spacing={2}>
+       {recommendations.map(({ productId, reason }) => {
+@@ -18,7 +18,7 @@
+                 <Box>
+                   <Typography fontWeight={700}>{product.name}</Typography>
+                   <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>{reason}</Typography>
+-                  <Button component={Link} variant="outlined" size="small" to={productHref(productId)}>Shop {product.name.toLowerCase()} →</Button>
++                  <Button component={Link} variant="outlined" size="small" to={productHref(productId)} state={{ returnTo }}>Shop {product.name.toLowerCase()} →</Button>
+                 </Box>
+               </Stack>
+             </Paper>
+@@ -32,10 +32,11 @@
+ export function ProductPage() {
+   const { productId } = useParams();
+   const product = findProductBySlug(productId);
++  const returnTo = (useLocation().state as { returnTo?: ReturnTo } | null)?.returnTo;
+   if (!product) return <Container sx={{ py: 7 }}><Typography variant="h2">Product not found</Typography><Button component={Link} to="/">Explore cuisines</Button></Container>;
+   return (
+     <Container maxWidth="md" sx={{ pt: 5 }}>
+-      <Button component={Link} to="/" sx={{ mb: 2 }}>← Browse techniques</Button>
++      <Button component={Link} to={returnTo?.path ?? '/'} sx={{ mb: 2 }}>{returnTo ? `← Back to ${returnTo.label}` : '← Explore cuisines'}</Button>
+       <Chip label="Simulated storefront" color="primary" sx={{ mb: 3 }} />
+       <Card>
+         <Grid container>
+diff --git a/src/features/videos/VideoLibrary.tsx b/src/features/videos/VideoLibrary.tsx
+--- a/src/features/videos/VideoLibrary.tsx
++++ b/src/features/videos/VideoLibrary.tsx
+@@ -1,9 +1,10 @@
+ import { Box, Button, Card, CardContent, Chip, Container, Paper, Stack, Typography } from '@mui/material';
+-import { Link, useParams } from 'react-router-dom';
++import { Link, useLocation, useParams } from 'react-router-dom';
+ import { getVideo } from '../../data/catalog';
+ import { useState } from 'react';
++import type { ReturnTo } from '../../types';
+ 
+-export function VideoLink({ videoId }: { videoId: string }) {
++export function VideoLink({ videoId, returnTo }: { videoId: string; returnTo?: ReturnTo }) {
+   const video = getVideo(videoId);
+   if (!video) return null;
+   return (
+@@ -13,7 +14,7 @@
+           <Typography fontWeight={700}>{video.title}</Typography>
+           <Typography variant="body2" color="text.secondary">{video.duration} · Simulated video lesson</Typography>
+         </Box>
+-        <Button component={Link} variant="contained" to={`/videos/${video.id}`}>View video preview →</Button>
++        <Button component={Link} variant="contained" to={`/videos/${video.id}`} state={{ returnTo }}>View video preview →</Button>
+       </Stack>
+     </Paper>
+   );
+@@ -23,10 +24,11 @@
+   const { videoId } = useParams();
+   const video = getVideo(videoId);
+   const [isShowingPreview, setIsShowingPreview] = useState(false);
++  const returnTo = (useLocation().state as { returnTo?: ReturnTo } | null)?.returnTo;
+   if (!video) return <Container sx={{ py: 7 }}><Typography variant="h2">Video not found</Typography><Button component={Link} to="/">Explore cuisines</Button></Container>;
+   return (
+     <Container maxWidth="md" sx={{ pt: 5 }}>
+-      <Button component={Link} to="/" sx={{ mb: 2 }}>← Browse techniques</Button>
++      <Button component={Link} to={returnTo?.path ?? '/'} sx={{ mb: 2 }}>{returnTo ? `← Back to ${returnTo.label}` : '← Explore cuisines'}</Button>
+       <Chip label="Simulated video page" color="primary" sx={{ mb: 2 }} />
+       <Typography variant="h2" component="h1" sx={{ mb: 1 }}>{video.title}</Typography>
+       <Typography color="text.secondary" sx={{ mb: 3 }}>{video.duration} · {video.teaser}</Typography>

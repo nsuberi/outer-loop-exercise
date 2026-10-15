@@ -1,0 +1,31 @@
+diff --git a/src/features/equipment/productLinks.ts b/src/features/equipment/productLinks.ts
+--- a/src/features/equipment/productLinks.ts
++++ b/src/features/equipment/productLinks.ts
+@@ -9,10 +9,11 @@
+ /**
+  * Resolve a storefront slug to a product. Forgiving by design (Spec 02):
+  * shortened or legacy links such as `/shop/rice` should still land on a
+- * relevant product instead of a dead end.
++ * relevant product instead of a dead end. An exact ID always wins; the
++ * prefix fallback applies only when no product has that exact ID.
+  */
+ export function findProductBySlug(slug?: string): Product | undefined {
+   if (!slug) return undefined;
+   const normalized = slug.trim().toLowerCase();
+-  return products.find((item) => item.id === normalized || item.id.startsWith(normalized));
++  return products.find((item) => item.id === normalized) ?? products.find((item) => item.id.startsWith(normalized));
+ }
+diff --git a/docs/specs/02-equipment-shopping.md b/docs/specs/02-equipment-shopping.md
+--- a/docs/specs/02-equipment-shopping.md
++++ b/docs/specs/02-equipment-shopping.md
+@@ -13,8 +13,8 @@
+ 1. Look up the `Product` with the same ID in the local catalog.
+ 2. Render the product's canonical `name` plus the technique-specific reason to use it.
+ 3. The **Shop [name]** action navigates to `/shop/{productId}`.
+-4. The destination's main heading should match the recommended product.
+-5. Storefront links should be forgiving. Shortened or legacy links (for example `/shop/rice` from an old newsletter) should still land on a relevant product rather than a dead end.
++4. The destination's main heading must be exactly the recommended product's `name`. A heading that merely contains the name (for example **Tortilla Press Liners** for **Tortilla Press**) is a different product and fails this contract.
++5. Storefront links should be forgiving. Shortened or legacy links (for example `/shop/rice` from an old newsletter) should still land on a relevant product rather than a dead end. Forgiving matching applies **only** when no product has the exact ID; an exact ID always opens that product.
+ 6. A link that matches nothing produces a friendly not-found state.
+ 
+ This applies to **every** recommendation, not just the first or most popular one.
