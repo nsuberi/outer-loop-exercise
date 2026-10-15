@@ -78,7 +78,7 @@ export const cuisines: Cuisine[] = [
 
 export const products: Product[] = [
   // New accessory: featured first in the storefront.
-  { id: 'tortilla-press-liners', name: 'Tortilla Press Liners', emoji: '🧻', price: '$7.50', description: 'Precut parchment rounds that keep masa from sticking to your press.', features: ['Pack of 100', 'Fits 6.5" and 8" presses', 'Compostable'] },
+  { id: 'tortilla-press-liners', name: 'Tortilla Press Liners', emoji: '📄', price: '$7.50', description: 'Precut parchment rounds that keep masa from sticking to your press.', features: ['Pack of 100', 'Fits 6.5" and 8" presses', 'Compostable'] },
   { id: 'tortilla-press', name: 'Tortilla Press', emoji: '🫓', price: '$24.00', description: 'A sturdy press for thin, even corn tortillas.', features: ['Cast aluminum plates', 'Easy-grip handle', 'For everyday masa dough'] },
   { id: 'cast-iron-comal', name: 'Cast-Iron Comal', emoji: '🍳', price: '$32.00', description: 'A flat cooking surface for toasting tortillas and charring vegetables.', features: ['Pre-seasoned iron', 'Even heat retention', 'Stovetop friendly'] },
   { id: 'mortar-pestle', name: 'Mortar and Pestle', emoji: '🪨', price: '$28.00', description: 'A stone bowl and pestle for rustic salsas and spice blends.', features: ['Textured grinding surface', 'Compact footprint', 'Hand wash'] },
